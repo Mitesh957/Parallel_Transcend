@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- CSS files need to be in the head section -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@9.0.0/ol.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@opencage/ol-opencage-geosearch/ol-opencage-geosearch.css" />
+    <style>
+        /* Adjust map size to fit the screen */
+        #map1 {
+            width: 100%;
+            height: 1000px;
+        }
+
+        .vendor-marker {
+            width: 100px;
+            height: 240px;
+            background-color: red;
+            border-radius: 50%;
+            border: 2px solid white;
+            cursor: pointer;
+        }
+
+        .vendor-marker:hover {
+            background-color: darkred;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Add a map element -->
+<div id="map1"></div>
+
+<!-- Include OpenLayers and OpenCage Geosearch scripts -->
+<script src="https://cdn.jsdelivr.net/npm/ol@9.0.0/dist/ol.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@opencage/geosearch-bundle"></script>
+<script src="https://cdn.jsdelivr.net/npm/@opencage/ol-opencage-geosearch/dist/ol-opencage-geosearch.js"></script>
+<script>
+    // Wait until everything is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // Create and initialize OpenLayers map object
+        var map = new ol.Map({
+            target: 'map1',
+            layers: [
+                new ol.layer.Tile({
+                    source: new ol.source.OSM()
+                })
+            ],
+            view: new ol.View({
+                center: ol.proj.fromLonLat([0, 0]), // Default to center of the map
+                zoom: 2 // Default zoom level
+            })
+        });
+
+        // Function to add a marker to the map
+        function addMarker(coord) {
+            var marker = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat(coord))
+            });
+
+            var markerStyle = new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 8,
+                    fill: new ol.style.Fill({
+                        color: 'red'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: 'white',
+                        width: 2
+                    })
+                })
+            });
+
+            marker.setStyle(markerStyle);
+
+            var vectorSource = new ol.source.Vector({
+                features: [marker]
+            });
+
+            var vectorLayer = new ol.layer.Vector({
+                source: vectorSource
+            });
+
+            map.addLayer(vectorLayer);
+        }
+
+        // Geosearch options
+        var options = {
+            key: 'oc_gs_codependemo74gzf48ew7fdvs91nba',
+            position: 'topright'
+        };
+
+        // Add geosearch to the map
+        var controlGeosearch = new OpenCageGeosearchControl(options);
+        map.addControl(controlGeosearch);
+
+        // Event listener for geosearch result
+        controlGeosearch.on('result', function (params) {
+            var latitude = params.geometry.lat;
+            var longitude = params.geometry.lng;
+
+            // Center the map on the selected location
+            map.getView().setCenter(ol.proj.fromLonLat([longitude, latitude]));
+            map.getView().setZoom(10); // Zoom level
+
+            // Add a marker to the selected location
+            addMarker([longitude, latitude]);
+
+            // Perform a search for nearby vendors
+            searchNearbyVendors(latitude, longitude);
+        });
+
+        // Function to search for nearby vendors
+        function searchNearbyVendors(latitude, longitude) {
+            // Here you can implement the logic to search for nearby vendors based on the provided latitude and longitude
+            // This could involve making an API call to your backend service or database
+            // For demonstration purposes, I'll just log the coordinates to the console
+            console.log('Searching for nearby vendors near latitude:', latitude, 'and longitude:', longitude);
+            // You can replace this with your actual implementation
+
+            // Once you have the list of nearby vendors, add markers for them on the map
+            // For demonstration purposes, let's add a marker for a nearby vendor
+            var nearbyVendorCoordinates = [
+                [longitude + 0.01, latitude + 0.01], // Example vendor coordinates
+                [longitude - 0.02, latitude - 0.02], // Example vendor coordinates
+                [longitude + 0.03, latitude - 0.01]  // Example vendor coordinates
+            ];
+
+            nearbyVendorCoordinates.forEach(coord => {
+                addMarker(coord);
+            });
+        }
+    });
+</script>
+</body>
+</html>
