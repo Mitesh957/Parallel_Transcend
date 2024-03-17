@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- CSS files need to be in the head section -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@9.0.0/ol.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@opencage/ol-opencage-geosearch/ol-opencage-geosearch.css" />
+    <style>
+        /* Adjust map size to fit the screen */
+        #map1 {
+            width: 100%;
+            height: 1000px;
+        }
+
+        .vendor-marker {
+            width: 100px;
+            height: 240px;
+            background-color: red;
+            border-radius: 50%;
+            border: 2px solid white;
+            cursor: pointer;
+        }
+
+        .vendor-marker:hover {
+            background-color: darkred;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Add a map element -->
+<div id="map1"></div>
+
+<!-- Include OpenLayers and OpenCage Geosearch scripts -->
+<script src="https://cdn.jsdelivr.net/npm/ol@9.0.0/dist/ol.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@opencage/geosearch-bundle"></script>
+<script src="https://cdn.jsdelivr.net/npm/@opencage/ol-opencage-geosearch/dist/ol-opencage-geosearch.js"></script>
+<script>
+    // Wait until everything is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // Create and initialize OpenLayers map object
+        var map = new ol.Map({
+            target: 'map1',
+            layers: [
+                new ol.layer.Tile({
+                    source: new ol.source.OSM()
+                })
+            ],
+            view: new ol.View({
+                center: ol.proj.fromLonLat([0, 0]), // Default to center of the map
+                zoom: 2 // Default zoom level
+            })
+        });
+
+        // Function to add a marker to the map
+        function addMarker(coord) {
+            var iconStyle = new ol.style.Style({
+                image: new ol.style.Icon({
+                    src: "/images/historymarker.png",
+                    scale: 4, // Adjust the scale factor to resize the icon (e.g., 4 for 4 times larger)
+                })
+            });
+            var marker = new ol.Feature({
+                geometry: new ol.geom.Point(ol.proj.fromLonLat(coord))
+            });
+
+            var markerStyle = new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 8,
+                    fill: new ol.style.Fill({
+                        color: 'red'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: 'white',
+                        width: 2
+                    })
+                })
+            });
+
+            marker.setStyle(markerStyle);
+
+            var vectorSource = new ol.source.Vector({
+                features: [marker]
+            });
+
+            var vectorLayer = new ol.layer.Vector({
+                source: vectorSource
+            });
+
+            map.addLayer(vectorLayer);
+        }
+
+        // Geosearch options
+        var options = {
+            key: 'oc_gs_codependemo74gzf48ew7fdvs91nba',
+            position: 'topright'
+        };
+
+        // Add geosearch to the map
+        var controlGeosearch = new OpenCageGeosearchControl(options);
+        map.addControl(controlGeosearch);
+
+        // Event listener for geosearch result
+        controlGeosearch.on('result', function (params) {
+            var latitude = params.geometry.lat;
+            var longitude = params.geometry.lng;
+
+            // Center the map on the selected location
+            map.getView().setCenter(ol.proj.fromLonLat([longitude, latitude]));
+            map.getView().setZoom(12); // Zoom level adjusted to show nearby vendors
+
+            // Add a marker to the selected location
+            addMarker([longitude, latitude]);
+
+            // Perform a search for nearby vendors
+            searchNearbyVendors(latitude, longitude);
+        });
+
+        // Function to search for nearby vendors
+        function searchNearbyVendors(latitude, longitude) {
+            // Generate more than 20 random vendor coordinates near the location searched
+            var nearbyVendorCoordinates = [];
+            for (var i = 0; i < 20; i++) {
+                var randomLatitude = latitude + (Math.random() - 0.5) * 0.2;
+                var randomLongitude = longitude + (Math.random() - 0.5) * 0.2;
+                nearbyVendorCoordinates.push([randomLongitude, randomLatitude]);
+            }
+
+            // Add markers for nearby vendors
+            nearbyVendorCoordinates.forEach(coord => {
+                addMarker(coord);
+            });
+
+            // Calculate the extent of all vendor coordinates
+            var extent = ol.extent.createEmpty();
+            nearbyVendorCoordinates.forEach(coord => {
+                ol.extent.extend(extent, coord);
+            });
+
+            // Fit the view of the map to show all markers
+            map.getView().fit(extent, { padding: [50, 50, 50, 50] });
+        }
+    });
+</script>
+</body>
+</html>
